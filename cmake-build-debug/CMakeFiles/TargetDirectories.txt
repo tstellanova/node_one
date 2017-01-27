@@ -1,3 +1,0 @@
-/Users/aero/Documents/proj/node_one/cmake-build-debug/CMakeFiles/edit_cache.dir
-/Users/aero/Documents/proj/node_one/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/Users/aero/Documents/proj/node_one/cmake-build-debug/CMakeFiles/node_one.dir

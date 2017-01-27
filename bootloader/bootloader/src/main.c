@@ -103,7 +103,11 @@ bootloader_t bootloader;
 
 static void uptime_process(bl_timer_id id, void *context)
 {
-	bootloader.uptime++;
+    static int heartbeat_val = 0;
+    heartbeat_val = !heartbeat_val;
+    stm32_gpiowrite(GPIO_LED_Y, heartbeat_val);
+
+    bootloader.uptime++;
 }
 
 
@@ -125,7 +129,6 @@ static void uptime_process(bl_timer_id id, void *context)
  *
  ****************************************************************************/
 
-/*
 static void node_info_process(bl_timer_id id, void *context)
 {
 
@@ -183,7 +186,7 @@ static void node_info_process(bl_timer_id id, void *context)
 		}
 	}
 }
- */
+
 
 /****************************************************************************
  * Name: node_status_process
@@ -203,7 +206,6 @@ static void node_info_process(bl_timer_id id, void *context)
  *
  ****************************************************************************/
 
-/*
 static void node_status_process(bl_timer_id id, void *context)
 {
 	static uint8_t transfer_id;
@@ -220,7 +222,7 @@ static void node_status_process(bl_timer_id id, void *context)
 	message.vendor_specific_status_code = 0u;
 	uavcan_tx_dsdl(DSDLMsgNodeStatus, &protocol, (const uint8_t *) &message, sizeof(uavcan_NodeStatus_t));
 }
- */
+
 
 /****************************************************************************
  * Name: find_descriptor
@@ -349,11 +351,10 @@ static bool is_app_valid(uint32_t first_word)
  *
  ****************************************************************************/
 
-/*
+//TODO this is a long function...
 static int get_dynamic_node_id(bl_timer_id tboot, uint32_t *allocated_node_id)
 {
 	uavcan_HardwareVersion_t hw_version;
-
 
 	struct {
 		uint8_t node_id;
@@ -434,30 +435,30 @@ restart:
 
 
 
-//			 *
-//			 * Rule D. On an Allocation message WHERE (source node ID is non-anonymous)
-//			 * AND (client's unique ID starts with the bytes available in the field unique_id)
-//			 * AND (unique_id is less than 16 bytes long):
-//			 *
-//			 * 1. The client waits for Tfollowup units of time, while listening for other Allocation messages (anon or otherwise).
-//			 *  If an Allocation message is received during this time, the execution of this rule will be terminated.
-//			 *  Also see rule C.
-//			 * 2. The client broadcasts a second-stage Allocation request message, where the fields are assigned following
-//			 *    values:
-//			 *      node_id                 - same value as in the first-stage
-//			 *      first_part_of_unique_id - false
-//			 *      unique_id               - at most MAX_LENGTH_OF_UNIQUE_ID_IN_REQUEST bytes of local unique ID with an offset
-//			 *                                equal to number of bytes in the received unique ID
-//			 *
-//			 *
-//			 *
-//			 * Rule E. On an Allocation message WHERE (source node ID is non-anonymous)
-//			 * AND (unique_id fully matches client's unique ID)
-//			 * AND (node_id in the received message is not zero):
-//			 * 1. Request Timer stops.
-//			 * 2. The client initializes its node_id with the received value.
-//			 * 3. The client terminates subscription to Allocation messages.
-//			 * 4. Exit.
+            // *
+            // * Rule D. On an Allocation message WHERE (source node ID is non-anonymous)
+            // * AND (client's unique ID starts with the bytes available in the field unique_id)
+            // * AND (unique_id is less than 16 bytes long):
+            // *
+            // * 1. The client waits for Tfollowup units of time, while listening for other Allocation messages (anon or otherwise).
+            // *  If an Allocation message is received during this time, the execution of this rule will be terminated.
+            // *  Also see rule C.
+            // * 2. The client broadcasts a second-stage Allocation request message, where the fields are assigned following
+            // *    values:
+            // *      node_id                 - same value as in the first-stage
+            // *      first_part_of_unique_id - false
+            // *      unique_id               - at most MAX_LENGTH_OF_UNIQUE_ID_IN_REQUEST bytes of local unique ID with an offset
+            // *                                equal to number of bytes in the received unique ID
+            // *
+            // *
+            // *
+            // * Rule E. On an Allocation message WHERE (source node ID is non-anonymous)
+            // * AND (unique_id fully matches client's unique ID)
+            // * AND (node_id in the received message is not zero):
+            // * 1. Request Timer stops.
+            // * 2. The client initializes its node_id with the received value.
+            // * 3. The client terminates subscription to Allocation messages.
+            // * 4. Exit.
 
 			// Count the number of unique ID bytes matched
 
@@ -514,7 +515,7 @@ restart:
 	timer_free(trequest);
 	return *allocated_node_id == ANY_NODE_ID ? CAN_BOOT_TIMEOUT : CAN_OK;
 }
-*/
+
 
 
 /****************************************************************************
@@ -971,35 +972,29 @@ static void application_run(size_t fw_image_size, bootloader_app_shared_t *commo
  *   CAN_OK - on Success or a CAN_BOOT_TIMEOUT
  *
  ****************************************************************************/
-
-/*
 static int autobaud_and_get_dynamic_node_id(bl_timer_id tboot,
 		can_speed_t *speed,
 		uint32_t *node_id)
 {
-
 	board_indicate(autobaud_start);
 
 	int rv = can_autobaud(speed, tboot);
-
 	if (rv != CAN_BOOT_TIMEOUT) {
 		board_indicate(autobaud_end);
 		board_indicate(allocation_start);
-//#if defined(DEBUG_APPLICATION_INPLACE)
+#if defined(DEBUG_APPLICATION_INPLACE)
 		*node_id = 125;
 		return rv;
-//#endif
+#endif
 		rv = get_dynamic_node_id(tboot, node_id);
-
 		if (rv != CAN_BOOT_TIMEOUT) {
 			board_indicate(allocation_end);
 		}
 	}
 
-
 	return rv;
 }
- */
+
 
 /****************************************************************************
  * Public Functions
@@ -1021,10 +1016,12 @@ static int autobaud_and_get_dynamic_node_id(bl_timer_id tboot,
 
 int main(int argc, char *argv[])
 {
-    uint8_t error_log_stage;
+    uint8_t boot_stage_log = 0;
+    bootloader_app_shared_t common;
 
     board_initialize();
-	memset((void *)&bootloader, 0, sizeof(bootloader));
+	memset((void*)&bootloader, 0, sizeof(bootloader));
+    memset((void*)&common, 0, sizeof(common));
 
 
 	board_indicate(reset);
@@ -1039,23 +1036,96 @@ int main(int argc, char *argv[])
 	bootloader.mode = MODE_INITIALIZATION;
 	bootloader.sub_mode = 0;
 
-	error_log_stage = LOGMESSAGE_STAGE_INIT;
+	boot_stage_log = LOGMESSAGE_STAGE_INIT;
 
+    //  Mark CRC to say this is not from auto baud and Node Allocation
+    common.crc = false;
 
-	// Set up the Timers
+    //	Either way prevent Deja vu by invalidating the struct
+    bootloader_app_shared_invalidate();
 
-	bl_timer_cb_t p = null_cb;
-	p.cb = uptime_process;
+	// Setup the Timers
 
-	// Uptime is always on
+	bl_timer_cb_t timer_cb = null_cb;
 
-	timer_allocate(modeRepeating | modeStarted, 1000, &p);
+	// uptime_process is always running, tracking heartbeat
+	timer_cb.cb = uptime_process;
+	timer_allocate(modeRepeating | modeStarted, OPT_NODE_UPTIME_RATE_MS, &timer_cb);
 
+    // node_info_process will handle received NodeInfo msgs, after a node ID is obtained
+    timer_cb.cb = node_info_process;
+    bl_timer_id tinfo = timer_allocate(modeRepeating, OPT_NODE_INFO_RATE_MS, &timer_cb);
 
+    // node_status_process  will
+    // send required NodeStatus msgs periodically after a node ID is obtained
+    timer_cb.cb = node_status_process;
+    bl_timer_id tstatus = timer_allocate(modeRepeating, OPT_NODE_STATUS_RATE_MS, &timer_cb);
+
+    // tboot will run to allow the application, if valid, to be booted.
+    // tboot is gated by the application being valid and the OPT_WAIT_FOR_GETNODEINFOxxxx settings
+	// Note that we don't provide a callback here because /TODO
+    bl_timer_id tboot = timer_allocate(modeTimeout, OPT_TBOOT_MS, 0);
+
+    // If the Application is valid
+    // and we are not in a reboot from the Application requesting a bootload
+    // or we are not configured to wait for NodeStatus
+    // then start tboot
+    if (bootloader.app_valid && !bootloader.wait_for_getnodeinfo && !bootloader.app_bl_request) {
+        timer_start(tboot);
+    }
+
+    // If this is a reboot from the running Application requesting a bootload
+    // then use the CAN parameters supplied by the running Application to init the CAN device.
+    if (bootloader.app_bl_request) {
+        bootloader.bus_speed = common.bus_speed;
+        can_init(can_freq2speed(common.bus_speed), CAN_Mode_Normal);
+    }
+    else {
+        //This is a regular reboot, so we need to detect CAN bus baud (autobaud) and obtain a node ID.
+        //If tboot was started, we will boot normally if the autobaud or node ID allocation runs longer than tboot
+
+        common.node_id = OPT_PREFERRED_NODE_ID;
+        //TODO why is it OK if this returns a non-OK value??
+        if (CAN_OK != autobaud_and_get_dynamic_node_id(tboot, (can_speed_t*)&bootloader.bus_speed, &common.node_id)) {
+            //It's OK if node ID is set to preferred value, because common.crc.valid is not true yet
+            goto boot;
+        }
+
+        // we have proper baud and node ID now: reset uptime
+        bootloader.uptime = 0;
+        common.bus_speed = can_speed2freq(bootloader.bus_speed);
+
+        // mark CRC as coming from autobaud/node allocation
+        common.crc = true;
+
+        // restart tboot because we may have taken a long time to get here
+        if (bootloader.app_valid && !bootloader.wait_for_getnodeinfo) {
+            timer_start(tboot);
+        }
+    }
+
+    // Now that we have a node ID, configure libuavcan
+    g_this_node_id = common.node_id;
+
+    // Now start the processes that require a valid node ID
+    timer_start(tinfo);
+    timer_start(tstatus);
+
+    //infinite runloop -- timers take over from here
 	while(1);
 
 
+boot:
+
+    CRASH();
+
+//TODO    application_run(bootloader.fw_image_descriptor->image_size, &common);
+
+
+    //we should never reach here
 	return 0;
+
+
 
 }
 
@@ -1066,7 +1136,7 @@ static int main_hold(int argc, char *argv[])
 	size_t fw_image_size = 0;
 	uavcan_Path_t fw_path;
 	size_t  fw_path_length;
-	uint8_t error_log_stage;
+	uint8_t boot_stage_log;
 	flash_error_t status;
 	bootloader_app_shared_t common;
 
@@ -1085,7 +1155,7 @@ static int main_hold(int argc, char *argv[])
 	bootloader.mode = MODE_INITIALIZATION;
 	bootloader.sub_mode = 0;
 
-	error_log_stage = LOGMESSAGE_STAGE_INIT;
+	boot_stage_log = LOGMESSAGE_STAGE_INIT;
 
 	bootloader.fw_image = (volatile uint32_t *)(APPLICATION_LOAD_ADDRESS);
 
@@ -1277,7 +1347,7 @@ static int main_hold(int argc, char *argv[])
 
 	//todo:Check this
 	if (fw_image_size < sizeof(app_descriptor_t)) {
-		error_log_stage = LOGMESSAGE_STAGE_GET_INFO;
+		boot_stage_log = LOGMESSAGE_STAGE_GET_INFO;
 		goto failure;
 	}
 
@@ -1299,14 +1369,14 @@ static int main_hold(int argc, char *argv[])
 //		 * Failed]:INDICATE_FW_UPDATE_ERASE_FAIL
 		board_indicate(fw_update_erase_fail);
 
-		error_log_stage = LOGMESSAGE_STAGE_ERASE;
+		boot_stage_log = LOGMESSAGE_STAGE_ERASE;
 		goto failure;
 	}
 
 	status = file_read_and_program(&fw_path, fw_path_length, fw_image_size);
 
 	if (status != FLASH_OK) {
-		error_log_stage = LOGMESSAGE_STAGE_PROGRAM;
+		boot_stage_log = LOGMESSAGE_STAGE_PROGRAM;
 		goto failure;
 	}
 
@@ -1317,7 +1387,7 @@ static int main_hold(int argc, char *argv[])
 
 		board_indicate(fw_update_invalid_crc);
 
-		error_log_stage = LOGMESSAGE_STAGE_VALIDATE;
+		boot_stage_log = LOGMESSAGE_STAGE_VALIDATE;
 		goto failure;
 	}
 
@@ -1327,7 +1397,7 @@ static int main_hold(int argc, char *argv[])
 				sizeof(bootloader.fw_word0.b));
 
 	if (status != FLASH_OK) {
-		error_log_stage = LOGMESSAGE_STAGE_FINALIZE;
+		boot_stage_log = LOGMESSAGE_STAGE_FINALIZE;
 		goto failure;
 	}
 
@@ -1351,7 +1421,7 @@ boot:
 failure:
 
 	uavcan_tx_log_message(LOGMESSAGE_LEVELERROR,
-			      error_log_stage,
+			      boot_stage_log,
 			      LOGMESSAGE_RESULT_FAIL);
 
 
