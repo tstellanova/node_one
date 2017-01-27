@@ -1,0 +1,5 @@
+./idea
+bootloader/build
+*.o
+
+
