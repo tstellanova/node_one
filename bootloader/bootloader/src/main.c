@@ -13,6 +13,8 @@
 #include "uavcan.h"
 #include "up_internal.h"
 //#include <irq.h>
+#include "userial.h"
+#include "tiny_printf.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -86,6 +88,12 @@ bootloader_t bootloader;
  * Private Functions
  ****************************************************************************/
 
+
+void debug_output(uint8_t* buf, uint8_t len)
+{
+    USART2_write(buf, len);
+}
+
 /****************************************************************************
  * Name: uptime_process
  *
@@ -101,6 +109,8 @@ bootloader_t bootloader;
  *
  ****************************************************************************/
 
+const char* kHelloStr = "HELLO\r\n";
+
 static void uptime_process(bl_timer_id id, void *context)
 {
     static int heartbeat_val = 0;
@@ -108,6 +118,8 @@ static void uptime_process(bl_timer_id id, void *context)
     stm32_gpiowrite(GPIO_LED_Y, heartbeat_val);
 
     bootloader.uptime++;
+
+    debug_output(kHelloStr,7);
 }
 
 
@@ -1025,6 +1037,8 @@ int main(int argc, char *argv[])
 
 
 	board_indicate(reset);
+
+    USART2_init();
 
 	up_timer_initialize();
 

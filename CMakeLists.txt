@@ -9,7 +9,7 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic -std=c++11")
 
 include_directories(libuavcan/libuavcan/include)
 
-set(SOURCE_FILES node.cpp platform_stm32.cpp)
+set(SOURCE_FILES node.cpp platform_stm32.cpp bootloader/bootloader/src/serial.c bootloader/bootloader/src/serial.h bootloader/bootloader/src/userial.c bootloader/bootloader/src/tiny_printf.c bootloader/bootloader/include/tiny_printf.h)
 add_executable(node_one ${SOURCE_FILES})
 
 

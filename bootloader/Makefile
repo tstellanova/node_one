@@ -90,7 +90,7 @@ BL_OPTIM_FLAGS    = -Os #-flto
 BL_LINKER_SCRIPT  = $(BL)/bootloader.ld
 BL_OBJECTS        = $(addprefix $(BL_BUILD), \
 					  main.o can.o crc.o flash.o random.o shared.o timer.o \
-					  uavcan.o)
+					  tiny_printf.o uavcan.o  userial.o )
 BL_INC_PATHS      = -I$(BL)/include/
 BL_LIB_PATHS      = -L.
 BL_LIBRARIES      =

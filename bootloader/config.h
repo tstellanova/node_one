@@ -57,7 +57,8 @@
 #define CONFIG_STM32_CONNECTIVITYLINE 1
 #define CONFIG_STM32_CAN1 1
 #define CONFIG_STM32_CAN1_REMAP1 1
-
+//enable USART2
+#define CONFIG_STM32_USART2
 
 /************************************************************************************
  * Included Files
